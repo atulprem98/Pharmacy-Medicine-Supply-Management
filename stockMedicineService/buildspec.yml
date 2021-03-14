@@ -1,0 +1,26 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+  pre_build:
+    commands:
+      - echo "Entered the pre-build phase"
+      - $(aws ecr get-login  --no-include-email --region us-east-2)
+  build:
+    commands:
+      - echo "Entered build phase"
+      - cd MedicinesSupply
+      - mvn compile
+      - mvn clean package -Dmaven.test.skip=true
+      - echo " building docker image"
+      - docker build -t service/medicinessupply .
+      - docker tag service/medicinessupply 942605225521.dkr.ecr.us-east-2.amazonaws.com/medicinessupply-registry:medicinessupplyapp
+  post_build:
+    commands:
+    - echo "Entered the post-build phase"
+    - docker push 942605225521.dkr.ecr.us-east-2.amazonaws.com/medicinessupply-registry:medicinessupplyapp 
+    - printf '[{"name":"medicinessupply-container","imageUri":"%s"}]'942605225521.dkr.ecr.us-east-2.amazonaws.com/medicinessupply-registry:medicinessupplyapp  > taskdefinition.json
+artifacts:
+  files:
+    - MedicinesSupply/taskdefinition.json
